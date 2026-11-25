@@ -20,11 +20,47 @@
 --  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 --  IN THE SOFTWARE.
 
-with Ada.Characters.Handling;
+package body PyCRC.Models
+  with SPARK_Mode
+is
 
-package body PyCRC.Models is
+   function To_String (Name : Model_Name) return String is
+     (Name.Text (1 .. Name.Length));
 
-   use Ada.Strings.Unbounded;
+   function To_Name (Text : String) return Model_Name with
+     Pre  => Text'First = 1 and then Text'Length <= Max_Model_Name,
+     Post => To_Name'Result.Length = Text'Length
+   is
+      Result : Model_Name := (Length => Text'Length, Text => [others => ' ']);
+   begin
+      for I in 1 .. Text'Length loop
+         Result.Text (I) := Text (I);
+      end loop;
+      return Result;
+   end To_Name;
+
+   function Lower_Char (C : Character) return Character is
+     (if C in 'A' .. 'Z'
+      then Character'Val
+        (Character'Pos (C) - Character'Pos ('A') + Character'Pos ('a'))
+      else C)
+   with
+     Post =>
+       (if C in 'A' .. 'Z'
+        then Lower_Char'Result in 'a' .. 'z'
+        else Lower_Char'Result = C);
+
+   function Lower (Text : String) return String with
+     Post => Lower'Result'First = Text'First
+       and then Lower'Result'Last = Text'Last
+   is
+      Result : String (Text'Range);
+   begin
+      for I in Text'Range loop
+         Result (I) := Lower_Char (Text (I));
+      end loop;
+      return Result;
+   end Lower;
 
    function M
      (Name        : String;
@@ -35,10 +71,16 @@ package body PyCRC.Models is
       Reflect_Out : Boolean;
       Xor_Out     : Interfaces.Unsigned_64;
       Check       : Interfaces.Unsigned_64) return Model
+   with
+     Pre  => Name'First = 1 and then Name'Length <= Max_Model_Name
+       and then Poly <= Bits_Mask (Width)
+       and then Xor_In <= Bits_Mask (Width)
+       and then Xor_Out <= Bits_Mask (Width)
+       and then Check <= Bits_Mask (Width)
    is
    begin
       return
-        (Name        => To_Unbounded_String (Name),
+        (Name        => To_Name (Name),
          Width       => Width,
          Poly        => Poly,
          Reflect_In  => Reflect_In,
@@ -95,29 +137,34 @@ package body PyCRC.Models is
 
    function At_Index (Index : Positive) return Model is (Catalog (Index));
 
-   function Lookup (Name : String; Item : out Model) return Boolean is
-      use Ada.Characters.Handling;
-      Wanted : constant String := To_Lower (Name);
+   procedure Lookup (Name : String; Item : out Model; Found : out Boolean) is
+      Wanted : constant String := Lower (Name);
    begin
-      for Candidate of Catalog loop
-         if To_Lower (To_String (Candidate.Name)) = Wanted then
-            Item := Candidate;
-            return True;
+      Item := Catalog (Catalog'First);
+      Found := False;
+      for Index in Catalog'Range loop
+         if Wanted = To_String (Catalog (Index).Name) then
+            Item := Catalog (Index);
+            Found := True;
+            return;
          end if;
       end loop;
-      return False;
    end Lookup;
 
-   function Names (Separator : String := ", ") return String is
-      Result : Unbounded_String;
-   begin
-      for Index in Catalog'Range loop
-         if Index > Catalog'First then
-            Append (Result, Separator);
+   function Names (Separator : String := ", ") return String
+   with SPARK_Mode => Off
+   is
+      function Join (Index : Positive) return String is
+         Piece : constant String := To_String (Catalog (Index).Name);
+      begin
+         if Index = Catalog'Last then
+            return Piece;
+         else
+            return Piece & Separator & Join (Index + 1);
          end if;
-         Append (Result, Catalog (Index).Name);
-      end loop;
-      return To_String (Result);
+      end Join;
+   begin
+      return Join (Catalog'First);
    end Names;
 
 end PyCRC.Models;

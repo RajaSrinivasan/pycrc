@@ -22,7 +22,10 @@
 
 with Interfaces;
 
-package PyCRC is
+package PyCRC
+  with SPARK_Mode
+is
+   use type Interfaces.Unsigned_64;
 
    Version        : constant String := "0.11.0";
    Version_String : constant String := "pycrc v0.11.0 (Ada)";
@@ -37,19 +40,37 @@ package PyCRC is
 
    Parameter_Error : exception;
 
-   procedure Die (Message : String) with No_Return;
-   procedure Warn (Message : String);
+   --  Text output is outside SPARK. Callers are the command-line units,
+   --  which are themselves SPARK_Mode Off.
+   procedure Die (Message : String) with
+     SPARK_Mode => Off,
+     No_Return;
+   procedure Warn (Message : String) with
+     SPARK_Mode => Off;
 
-   function Bits_Mask (Width : Width_Type) return Interfaces.Unsigned_64;
-   function MSB_Mask (Width : Width_Type) return Interfaces.Unsigned_64;
+   function Bits_Mask (Width : Width_Type) return Interfaces.Unsigned_64 with
+     Global => null,
+     Post   =>
+       (if Width = 64 then Bits_Mask'Result = Interfaces.Unsigned_64'Last
+        else Bits_Mask'Result = 2 ** Width - 1);
 
-   --  Lower-case hexadecimal with a 0x prefix and no leading zeros.
-   function Hex_Image (Value : Interfaces.Unsigned_64) return String;
+   function MSB_Mask (Width : Width_Type) return Interfaces.Unsigned_64 with
+     Global => null,
+     Post   =>
+       MSB_Mask'Result = Interfaces.Shift_Left (Interfaces.Unsigned_64'(1), Width - 1);
 
-   --  Lower-case hexadecimal padded to the nibble width of a CRC register.
+   --  Unconstrained strings are not a useful SPARK proof target here: the
+   --  image is only for printing, and GNATprove declines contextual analysis
+   --  of unconstrained function results.
+   function Hex_Image (Value : Interfaces.Unsigned_64) return String with
+     SPARK_Mode => Off;
+
    function Hex_Image
-     (Value : Interfaces.Unsigned_64; Width : Width_Type) return String;
+     (Value : Interfaces.Unsigned_64; Width : Width_Type) return String
+   with
+     SPARK_Mode => Off;
 
-   function To_Bytes (Text : String) return Byte_Array;
+   function To_Bytes (Text : String) return Byte_Array with
+     SPARK_Mode => Off;
 
 end PyCRC;

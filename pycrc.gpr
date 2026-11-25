@@ -26,4 +26,13 @@ project PyCRC is
          "-gnatw.T");
    end Compiler;
 
+   --  Silver is absence of run-time errors. Level 2 is the proof effort
+   --  used for each unit; the test script passes the same switches.
+   package Prove is
+      for Proof_Switches ("Ada") use
+        ("--mode=silver",
+         "--level=2",
+         "--timeout=30");
+   end Prove;
+
 end PyCRC;

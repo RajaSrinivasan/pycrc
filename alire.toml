@@ -11,5 +11,8 @@ tags = ["crc", "checksum", "code-generator", "ada"]
 
 executables = ["pycrc", "pycrc_self_check"]
 
+[[depends-on]]
+gnatprove = "=16.1.0"
+
 [build-switches]
 "*".ada_version = "Ada2022"

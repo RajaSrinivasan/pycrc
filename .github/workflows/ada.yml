@@ -35,3 +35,6 @@ jobs:
 
       - name: Compare with Python and compile generated Ada
         run: python3 ada/tests/check_against_python.py
+
+      - name: Prove each unit with GNATprove
+        run: python3 ada/tests/prove_units.py

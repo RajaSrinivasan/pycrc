@@ -22,7 +22,12 @@
 
 with PyCRC.Options;
 
-package PyCRC.Codegen is
+--  Source generation builds text with Unbounded_String and writes files
+--  with Text_IO. The CRC tables it emits are computed by the SPARK
+--  Algorithms package. The generated units themselves are SPARK.
+package PyCRC.Codegen
+  with SPARK_Mode => Off
+is
 
    procedure Generate (Opt : Options.Settings);
 
