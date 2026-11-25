@@ -10,3 +10,14 @@ __pycache__
 /doc/pycrc.html
 /doc/docbook.css
 /test/pycrc_files.tar.gz
+
+# Alire / GNAT build products
+/obj/
+/bin/
+/lib/
+/alire/*
+!/alire/alire.lock
+/config/
+*.ali
+*.o
+*.adc
