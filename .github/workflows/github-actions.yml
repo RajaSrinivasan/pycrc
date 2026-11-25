@@ -11,23 +11,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          # ubuntu-latest's default python3. A venv keeps pip off the
-          # externally managed system interpreter.
-          if ! python3 -m venv .venv; then
+          # ubuntu-latest's default python3. The venv sits outside the
+          # checkout so flake8 does not lint pip's own sources.
+          venv="${RUNNER_TEMP}/venv"
+          if ! python3 -m venv "$venv"; then
             sudo apt-get update
             sudo apt-get install -y python3-venv python3-pip
-            python3 -m venv .venv
+            python3 -m venv "$venv"
           fi
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/pip install flake8 pytest
-          if [ -f requirements.txt ]; then .venv/bin/pip install -r requirements.txt; fi
-          .venv/bin/python --version
+          "$venv/bin/python" -m pip install --upgrade pip
+          "$venv/bin/pip" install flake8 pytest
+          if [ -f requirements.txt ]; then "$venv/bin/pip" install -r requirements.txt; fi
+          echo "VENV=$venv" >> "$GITHUB_ENV"
+          "$venv/bin/python" --version
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          .venv/bin/flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          "$VENV/bin/flake8" . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 200 chars wide
-          .venv/bin/flake8 . --count --exit-zero --max-complexity=11 --max-line-length=127 --statistics
+          "$VENV/bin/flake8" . --count --exit-zero --max-complexity=11 --max-line-length=127 --statistics
       - name: Test with pytest
         run: |
-          .venv/bin/pytest
+          "$VENV/bin/pytest"
