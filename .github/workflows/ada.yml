@@ -1,0 +1,37 @@
+name: Ada
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Alire and the GNAT toolchain
+        uses: alire-project/setup-alire@v6.0.0
+        with:
+          # Pinned to the toolchain this port was verified with. setup-alire
+          # caches ~/.local/share/alire, which holds these downloads.
+          toolchain: gnat_native=16.1.0 gprbuild=26.0.1
+          cache: true
+
+      - name: Add the GNAT toolchain to PATH
+        run: |
+          mapfile -t bins < <(find "$HOME/.local/share/alire/toolchains" -type d -name bin | sort)
+          if [ "${#bins[@]}" -eq 0 ]; then
+            echo "GNAT toolchain bin directory was not found" >&2
+            exit 1
+          fi
+          for bin in "${bins[@]}"; do
+            echo "$bin" >> "$GITHUB_PATH"
+            echo "Added $bin"
+          done
+
+      - name: Build
+        run: alr -n build
+
+      - name: Compare with Python and compile generated Ada
+        run: python3 ada/tests/check_against_python.py
