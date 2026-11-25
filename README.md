@@ -40,6 +40,8 @@ Either of these will install a `pycrc` binary in the path.
 Ada port
 --------
 
+[![Ada](https://github.com/RajaSrinivasan/pycrc/actions/workflows/ada.yml/badge.svg)](https://github.com/RajaSrinivasan/pycrc/actions/workflows/ada.yml)
+
 The Ada sources live in `ada/src` and are built with [Alire](https://alire.ada.dev/)
 and GNAT. The Python implementation is unchanged and remains the C code
 generator; the Ada tool is a second front end with the same models and the
@@ -106,7 +108,8 @@ With the project built and `python3` available:
 
 That compares every built-in model with `python3 src/pycrc.py`, checks files
 and hex strings, sweeps widths from 1 to 64 bits, then compiles generated
-Ada for several models and algorithms and runs it.
+Ada for several models and algorithms and runs it. The same script runs in
+GitHub Actions on every push and pull request (`.github/workflows/ada.yml`).
 
 ### Differences from the Python tool
 
