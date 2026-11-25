@@ -1,0 +1,29 @@
+--  pycrc -- parameterisable CRC calculation utility and Ada source generator.
+--
+--  Copyright (c) 2006-2017  Thomas Pircher  <tehpeh-web@tty1.net>
+--  SPDX-License-Identifier: MIT
+
+project PyCRC is
+
+   for Source_Dirs use ("ada/src");
+   for Object_Dir use "obj";
+   for Exec_Dir use "bin";
+   for Create_Missing_Dirs use "True";
+   for Main use ("pycrc-main.adb", "pycrc-self_check.adb");
+
+   package Builder is
+      for Executable ("pycrc-main.adb") use "pycrc";
+      for Executable ("pycrc-self_check.adb") use "pycrc_self_check";
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        ("-g",
+         "-O2",
+         "-gnat2022",
+         "-gnatwa",
+         "-gnatwe",
+         "-gnatw.T");
+   end Compiler;
+
+end PyCRC;

@@ -1,0 +1,15 @@
+name = "pycrc"
+description = "Ada port of pycrc: CRC calculator and Ada source code generator"
+version = "0.11.0"
+licenses = "MIT"
+
+authors = ["Thomas Pircher"]
+maintainers = ["Thomas Pircher <tehpeh-web@tty1.net>"]
+maintainers-logins = ["tpircher"]
+website = "https://pycrc.org"
+tags = ["crc", "checksum", "code-generator", "ada"]
+
+executables = ["pycrc", "pycrc_self_check"]
+
+[build-switches]
+"*".ada_version = "Ada2022"
