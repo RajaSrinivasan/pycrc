@@ -396,9 +396,11 @@ package body PyCRC.Options is
             elsif Name = "--model" then
                declare
                   Model_Name : constant String := Take_Value (Arg);
-                  Item       : Models.Model;
+                  Item  : Models.Model;
+                  Found : Boolean;
                begin
-                  if not Models.Lookup (Model_Name, Item) then
+                  Models.Lookup (Model_Name, Item, Found);
+                  if not Found then
                      Die ("unsupported model " & Model_Name
                           & ". Supported models are: " & Models.Names & ".");
                   end if;

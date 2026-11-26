@@ -21,17 +21,18 @@
 --  IN THE SOFTWARE.
 
 with Ada.Command_Line;
-with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 with Interfaces;
 with PyCRC.Algorithms;
 with PyCRC.Models;
 
-procedure PyCRC.Self_Check is
+--  Prints a report with Text_IO. The comparisons themselves call SPARK
+--  subprograms.
+procedure PyCRC.Self_Check
+  with SPARK_Mode => Off
+is
 
-   use Ada.Strings.Unbounded;
    use Ada.Text_IO;
-   use type Interfaces.Unsigned_64;
 
    Failures : Natural := 0;
 
@@ -69,7 +70,7 @@ begin
    for Index in 1 .. Models.Count loop
       declare
          Item : constant Models.Model := Models.At_Index (Index);
-         Name : constant String := To_String (Item.Name);
+         Name : constant String := Models.To_String (Item.Name);
          Calc : constant Algorithms.Calculator := Calc_Of (Item);
          Data : constant Byte_Array := To_Bytes ("123456789");
          BBB  : constant Interfaces.Unsigned_64 :=
@@ -106,7 +107,7 @@ begin
    for Index in 1 .. Models.Count loop
       declare
          Item : constant Models.Model := Models.At_Index (Index);
-         Name : constant String := To_String (Item.Name);
+         Name : constant String := Models.To_String (Item.Name);
          Calc : constant Algorithms.Calculator := Calc_Of (Item);
 
          procedure Agree (Sample : Byte_Array) is

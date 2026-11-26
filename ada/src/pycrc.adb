@@ -22,18 +22,18 @@
 
 with Ada.Text_IO;
 
-package body PyCRC is
+package body PyCRC
+  with SPARK_Mode
+is
 
-   use type Interfaces.Unsigned_64;
-
-   procedure Die (Message : String) is
+   procedure Die (Message : String) with SPARK_Mode => Off is
    begin
       Ada.Text_IO.Put_Line
         (Ada.Text_IO.Standard_Error, "pycrc: error: " & Message);
       raise Parameter_Error;
    end Die;
 
-   procedure Warn (Message : String) is
+   procedure Warn (Message : String) with SPARK_Mode => Off is
    begin
       Ada.Text_IO.Put_Line
         (Ada.Text_IO.Standard_Error, "pycrc: warning: " & Message);
@@ -56,6 +56,7 @@ package body PyCRC is
 
    function Padded_Hex
      (Value : Interfaces.Unsigned_64; Nibble_Count : Positive) return String
+   with SPARK_Mode => Off
    is
       use Interfaces;
       Hexits : constant String := "0123456789abcdef";
@@ -69,7 +70,9 @@ package body PyCRC is
       return "0x" & Buffer;
    end Padded_Hex;
 
-   function Hex_Image (Value : Interfaces.Unsigned_64) return String is
+   function Hex_Image (Value : Interfaces.Unsigned_64) return String
+   with SPARK_Mode => Off
+   is
       Full  : constant String := Padded_Hex (Value, 16);
       Start : Positive := Full'First + 2;
    begin
@@ -84,13 +87,16 @@ package body PyCRC is
 
    function Hex_Image
      (Value : Interfaces.Unsigned_64; Width : Width_Type) return String
+   with SPARK_Mode => Off
    is
       Nibble_Count : constant Positive := Positive'Max (1, (Width + 3) / 4);
    begin
       return Padded_Hex (Value, Nibble_Count);
    end Hex_Image;
 
-   function To_Bytes (Text : String) return Byte_Array is
+   function To_Bytes (Text : String) return Byte_Array
+   with SPARK_Mode => Off
+   is
       Result : Byte_Array (1 .. Text'Length);
    begin
       for I in Text'Range loop

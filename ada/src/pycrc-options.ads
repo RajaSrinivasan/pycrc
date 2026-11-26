@@ -23,7 +23,11 @@
 with Ada.Strings.Unbounded;
 with Interfaces;
 
-package PyCRC.Options is
+--  Command-line parsing uses Unbounded_String and Ada.Command_Line, which
+--  are outside the SPARK subset. The CRC maths it calls stays in SPARK.
+package PyCRC.Options
+  with SPARK_Mode => Off
+is
 
    type Algorithm_Selection is record
       Bit_By_Bit      : Boolean := False;

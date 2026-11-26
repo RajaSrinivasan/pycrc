@@ -31,10 +31,13 @@ with PyCRC.Algorithms;
 with PyCRC.Codegen;
 with PyCRC.Options;
 
-procedure PyCRC.Main is
+--  The driver reads arguments and files and writes the checksum. Those
+--  libraries are not in SPARK; the arithmetic is PyCRC.Algorithms.
+procedure PyCRC.Main
+  with SPARK_Mode => Off
+is
 
    use Ada.Strings.Unbounded;
-   use type Interfaces.Unsigned_64;
 
    function Make (Opt : Options.Settings) return Algorithms.Calculator is
      (Algorithms.Create

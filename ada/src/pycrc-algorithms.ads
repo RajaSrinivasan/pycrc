@@ -22,7 +22,9 @@
 
 with Interfaces;
 
-package PyCRC.Algorithms is
+package PyCRC.Algorithms
+  with SPARK_Mode
+is
 
    --  Lookup tables are indexed by 1, 2, 4 or 8 bits. The calculator uses
    --  8, which is what the Python implementation computes. Generated code
@@ -34,6 +36,13 @@ package PyCRC.Algorithms is
 
    type Calculator is private;
 
+   function Register_Width (Calc : Calculator) return Width_Type with
+     Global => null;
+
+   function Register_Mask (Calc : Calculator) return Interfaces.Unsigned_64 with
+     Global => null,
+     Post   => Register_Mask'Result = Bits_Mask (Register_Width (Calc));
+
    function Create
      (Width           : Width_Type;
       Poly            : Interfaces.Unsigned_64;
@@ -41,35 +50,64 @@ package PyCRC.Algorithms is
       Xor_In          : Interfaces.Unsigned_64;
       Reflect_Out     : Boolean;
       Xor_Out         : Interfaces.Unsigned_64;
-      Table_Idx_Width : Table_Index_Width := 8) return Calculator;
+      Table_Idx_Width : Table_Index_Width := 8) return Calculator
+   with
+     Global => null,
+     Post   =>
+       Register_Width (Create'Result) = Width
+       and then Register_Mask (Create'Result) = Bits_Mask (Width);
 
    function Bit_By_Bit
-     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64;
+     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64
+   with
+     Global => null,
+     Post   => Bit_By_Bit'Result <= Register_Mask (Calc);
 
    function Bit_By_Bit_Fast
-     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64;
+     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64
+   with
+     Global => null,
+     Post   => Bit_By_Bit_Fast'Result <= Register_Mask (Calc);
 
    function Table_Driven
-     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64;
+     (Calc : Calculator; Data : Byte_Array) return Interfaces.Unsigned_64
+   with
+     Global => null,
+     Post   => Table_Driven'Result <= Register_Mask (Calc);
 
    --  Streaming form of the direct (bit-by-bit-fast) algorithm. File checks
    --  feed the register a chunk at a time, matching pycrc's --check-file.
-   function Direct_Init (Calc : Calculator) return Interfaces.Unsigned_64;
+   function Direct_Init (Calc : Calculator) return Interfaces.Unsigned_64 with
+     Global => null,
+     Post   => Direct_Init'Result <= Register_Mask (Calc);
 
    function Direct_Update
      (Calc     : Calculator;
       Register : Interfaces.Unsigned_64;
-      Data     : Byte_Array) return Interfaces.Unsigned_64;
+      Data     : Byte_Array) return Interfaces.Unsigned_64
+   with
+     Global => null,
+     Pre    => Register <= Register_Mask (Calc),
+     Post   => Direct_Update'Result <= Register_Mask (Calc);
 
    function Direct_Finalize
      (Calc     : Calculator;
-      Register : Interfaces.Unsigned_64) return Interfaces.Unsigned_64;
+      Register : Interfaces.Unsigned_64) return Interfaces.Unsigned_64
+   with
+     Global => null,
+     Pre    => Register <= Register_Mask (Calc),
+     Post   => Direct_Finalize'Result <= Register_Mask (Calc);
 
    function Lookup_Table
      (Width       : Width_Type;
       Poly        : Interfaces.Unsigned_64;
       Reflect_In  : Boolean;
-      Index_Width : Table_Index_Width := 8) return Word_Array;
+      Index_Width : Table_Index_Width := 8) return Word_Array
+   with
+     Global => null,
+     Post   =>
+       Lookup_Table'Result'First = 0
+       and then Lookup_Table'Result'Last = 2 ** Index_Width - 1;
 
 private
 
@@ -79,11 +117,17 @@ private
       Poly        : Interfaces.Unsigned_64 := 0;
       Xor_In      : Interfaces.Unsigned_64 := 0;
       Xor_Out     : Interfaces.Unsigned_64 := 0;
-      Mask        : Interfaces.Unsigned_64 := 0;
-      MSB         : Interfaces.Unsigned_64 := 0;
+      Mask        : Interfaces.Unsigned_64 := 16#FF#;
+      MSB         : Interfaces.Unsigned_64 := 16#80#;
       Reflect_In  : Boolean := False;
       Reflect_Out : Boolean := False;
       Table       : Word_Array (0 .. 255) := [others => 0];
-   end record;
+   end record
+     with Type_Invariant =>
+       Calculator.Mask = Bits_Mask (Calculator.Width)
+       and then Calculator.MSB = MSB_Mask (Calculator.Width)
+       and then (Calculator.Poly and Calculator.Mask) = Calculator.Poly
+       and then (Calculator.Xor_In and Calculator.Mask) = Calculator.Xor_In
+       and then (Calculator.Xor_Out and Calculator.Mask) = Calculator.Xor_Out;
 
 end PyCRC.Algorithms;

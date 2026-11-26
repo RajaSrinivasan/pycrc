@@ -111,6 +111,32 @@ and hex strings, sweeps widths from 1 to 64 bits, then compiles generated
 Ada for several models and algorithms and runs it. The same script runs in
 GitHub Actions on every push and pull request (`.github/workflows/ada.yml`).
 
+### SPARK
+
+`PyCRC`, `PyCRC.Algorithms`, and `PyCRC.Models` are in SPARK mode.
+`alr build` also installs GNATprove 16.1 (an Alire dependency). Silver proof,
+one unit at a time:
+
+    python3 ada/tests/prove_units.py
+
+That runs `gnatprove -u` on every body. A unit fails the script when any
+check is unproved. The script then proves generated packages for several
+models and algorithms; those packages are marked `SPARK_Mode`.
+
+`PyCRC.Options`, `PyCRC.Codegen`, `PyCRC.Main`, and `PyCRC.Self_Check` are
+`SPARK_Mode => Off`. They parse arguments, build source text, or read and
+write files. `Ada.Command_Line`, `Ada.Text_IO`, `Ada.Streams`, and
+`Ada.Strings.Unbounded` are outside SPARK. Inside the SPARK units, `Die`,
+`Warn`, `Hex_Image`, and `To_Bytes` are Off for the same reason (text I/O
+and unconstrained strings), and `Models.Names` is Off because it only joins
+help text. The CRC arithmetic they call stays in the proved units.
+
+GNATprove is asked for silver mode: absence of run-time errors, plus the
+contracts that are practical to prove (mask width, catalogue values fitting
+the register, and the direct algorithm's register staying inside the mask).
+It does not try to prove that the three algorithms return the same value.
+That equivalence is checked by the Python comparison, not by the prover.
+
 ### Differences from the Python tool
 
 *   Register widths above 64 bits are rejected. Every model shipped with

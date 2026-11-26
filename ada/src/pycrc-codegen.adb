@@ -255,7 +255,9 @@ package body PyCRC.Codegen is
          end;
       end loop;
       L (D, 0, "");
-      L (D, 0, "package " & Pack & " is");
+      L (D, 0, "package " & Pack);
+      L (D, 2, "with SPARK_Mode");
+      L (D, 0, "is");
       L (D, 0, "");
       L (D, 3, "subtype Byte is Interfaces.Unsigned_8;");
       L (D, 3, "type Byte_Array is array (Positive range <>) of Byte;");
@@ -476,14 +478,29 @@ package body PyCRC.Codegen is
    end Add_BBF;
 
    procedure Add_Table_Aggregate
-     (D : in out Doc; Table : Algorithms.Word_Array; Bits : Natural)
+     (D          : in out Doc;
+      Table      : Algorithms.Word_Array;
+      Bits       : Natural;
+      With_Index : Boolean := True)
    is
       Per_Line : constant Positive := (if Bits > 32 then 4 else 8);
       Column   : Natural := 0;
       Line     : Unbounded_String;
    begin
-      L (D, 3, "Table : constant array (0 .. "
-         & Decimal (Table'Length - 1) & ") of CRC_Type :=");
+      if With_Index then
+         L (D, 3, "type Table_Index is mod "
+            & Decimal (Table'Length) & ";");
+         L (D, 3, "function To_Index (Value : Unsigned_64) return Table_Index is");
+         L (D, 6, "Masked : constant Unsigned_64 := Value and Table_Mask;");
+         L (D, 3, "begin");
+         L (D, 6, "return Table_Index (Masked);");
+         L (D, 3, "end To_Index;");
+         L (D, 0, "");
+         L (D, 3, "Table : constant array (Table_Index) of CRC_Type :=");
+      else
+         L (D, 3, "Table : constant array (0 .. "
+            & Decimal (Table'Length - 1) & ") of CRC_Type :=");
+      end if;
       L (D, 5, "[");
       for I in Table'Range loop
          if Column = 0 then
@@ -546,16 +563,16 @@ package body PyCRC.Codegen is
          L (D, Base, "declare");
          if Opt.Reflect_In then
             if Chunks = 1 then
-               L (D, Base + 3, "Idx : constant Natural :=");
+               L (D, Base + 3, "Idx : constant Table_Index :=");
                L (D, Base + 6,
-                  "Natural ((Reg xor Unsigned_64 (Octet)) and Table_Mask);");
+                  "To_Index ((Reg xor Unsigned_64 (Octet)) and Table_Mask);");
             else
                L (D, Base + 3, "Shifted : constant Unsigned_64 :=");
                L (D, Base + 6, "Shr (Unsigned_64 (Octet), " & Step
                   & " * Idx_Width);");
-               L (D, Base + 3, "Idx : constant Natural :=");
+               L (D, Base + 3, "Idx : constant Table_Index :=");
                L (D, Base + 6,
-                  "Natural ((Reg xor Shifted) and Table_Mask);");
+                  "To_Index ((Reg xor Shifted) and Table_Mask);");
             end if;
          else
             if Chunks = 1 then
@@ -576,13 +593,13 @@ package body PyCRC.Codegen is
                   & Decimal (Positive (W) - Positive (Idx_W)) & ");");
             end if;
             if Chunks = 1 then
-               L (D, Base + 3, "Idx : constant Natural :=");
+               L (D, Base + 3, "Idx : constant Table_Index :=");
                L (D, Base + 6,
-                  "Natural ((CRC_Shifted xor Unsigned_64 (Octet)) and Table_Mask);");
+                  "To_Index ((CRC_Shifted xor Unsigned_64 (Octet)) and Table_Mask);");
             else
-               L (D, Base + 3, "Idx : constant Natural :=");
+               L (D, Base + 3, "Idx : constant Table_Index :=");
                L (D, Base + 6,
-                  "Natural ((CRC_Shifted xor Shifted) and Table_Mask);");
+                  "To_Index ((CRC_Shifted xor Shifted) and Table_Mask);");
             end if;
          end if;
          L (D, Base, "begin");
@@ -630,7 +647,9 @@ package body PyCRC.Codegen is
       Add_Banner (D, Opt,
                   "Package body. GNAT file name: " & Unit_File (Pack) & ".adb");
       L (D, 0, "");
-      L (D, 0, "package body " & Pack & " is");
+      L (D, 0, "package body " & Pack);
+      L (D, 2, "with SPARK_Mode");
+      L (D, 0, "is");
       L (D, 0, "");
       Add_Support (D, Opt, Need_Shl, Need_Shr, Need_Reflect);
       if Opt.Algorithm.Bit_By_Bit then
@@ -652,13 +671,16 @@ package body PyCRC.Codegen is
       L (D, 0, "--  GNAT file name: " & Unit_File (Proc) & ".adb");
       L (D, 0, "--  With no arguments, checksums the ASCII string ""123456789"".");
       L (D, 0, "--  One argument replaces that string. The result is printed as 0x....");
+      L (D, 0, "--  Text_IO and Command_Line are outside SPARK, so this driver is Off.");
       L (D, 0, "");
       L (D, 0, "with Ada.Command_Line;");
       L (D, 0, "with Ada.Text_IO;");
       L (D, 0, "with Interfaces;");
       L (D, 0, "with " & Pack & ";");
       L (D, 0, "");
-      L (D, 0, "procedure " & Proc & " is");
+      L (D, 0, "procedure " & Proc);
+      L (D, 2, "with SPARK_Mode => Off");
+      L (D, 0, "is");
       L (D, 0, "");
       L (D, 3, "function To_Bytes (Text : String) return " & Pack & ".Byte_Array is");
       L (D, 6, "Result : " & Pack & ".Byte_Array (1 .. Text'Length);");
@@ -707,7 +729,7 @@ package body PyCRC.Codegen is
    begin
       Add_Banner (D, Opt, "CRC lookup table.");
       L (D, 0, "");
-      Add_Table_Aggregate (D, Table, W);
+      Add_Table_Aggregate (D, Table, W, With_Index => False);
       L (D, 0, "");
    end Add_Table_Only;
 

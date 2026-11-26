@@ -20,13 +20,28 @@
 --  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 --  IN THE SOFTWARE.
 
-with Ada.Strings.Unbounded;
 with Interfaces;
 
-package PyCRC.Models is
+package PyCRC.Models
+  with SPARK_Mode
+is
+
+   Max_Model_Name : constant := 16;
+
+   --  Fixed text so the catalogue does not depend on Unbounded_String,
+   --  which is outside SPARK.
+   type Model_Name is record
+      Length : Natural range 0 .. Max_Model_Name := 0;
+      Text   : String (1 .. Max_Model_Name) := [others => ' '];
+   end record;
+
+   function To_String (Name : Model_Name) return String with
+     Global => null,
+     Pre    => Name.Length <= Max_Model_Name,
+     Post   => To_String'Result'Length = Name.Length;
 
    type Model is record
-      Name        : Ada.Strings.Unbounded.Unbounded_String;
+      Name        : Model_Name;
       Width       : Width_Type;
       Poly        : Interfaces.Unsigned_64;
       Reflect_In  : Boolean;
@@ -36,12 +51,22 @@ package PyCRC.Models is
       Check       : Interfaces.Unsigned_64;
    end record;
 
-   function Count return Positive;
-   function At_Index (Index : Positive) return Model;
+   function Count return Positive with
+     Global => null;
 
-   --  Case-insensitive. Returns False when Name is not a known model.
-   function Lookup (Name : String; Item : out Model) return Boolean;
+   function At_Index (Index : Positive) return Model with
+     Global => null,
+     Pre    => Index <= Count;
 
-   function Names (Separator : String := ", ") return String;
+   --  Case-insensitive. Found is False when Name is not a known model.
+   --  A function cannot have an out parameter in SPARK, so this is a procedure.
+   procedure Lookup (Name : String; Item : out Model; Found : out Boolean) with
+     Global  => null,
+     Depends => (Found => Name, Item => Name);
+
+   --  Help text only. Unbounded concatenation of a caller-chosen separator
+   --  is not part of the CRC model, so this stays outside SPARK.
+   function Names (Separator : String := ", ") return String with
+     SPARK_Mode => Off;
 
 end PyCRC.Models;
